@@ -69,12 +69,14 @@ type TelegramConfig struct {
 
 type ChannelConfig struct {
 	Name     string `yaml:"name"`
-	Type     string `yaml:"type"` // "telegram", "wecom", "dingtalk", "feishu", "bark", "webhook"
+	Type     string `yaml:"type"` // "telegram", "wecom", "dingtalk", "feishu", "bark", "webhook", "gotify"
 	Enabled  *bool  `yaml:"enabled"`
-	URL      string `yaml:"url"`       // Webhook endpoint (for wecom, dingtalk, feishu, bark, webhook)
+	URL      string `yaml:"url"`       // Webhook endpoint (for wecom, dingtalk, feishu, bark, webhook, gotify)
 	BotToken string `yaml:"bot_token"` // For telegram
 	ChatID   string `yaml:"chat_id"`   // For telegram
 	Secret   string `yaml:"secret"`    // Optional sign secret for DingTalk / Feishu
+	Token    string `yaml:"token"`     // For Gotify App token
+	Priority int    `yaml:"priority"`  // Optional priority (e.g. for Gotify, 1-10)
 }
 
 type NotifyConfig struct {

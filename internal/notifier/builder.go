@@ -48,6 +48,14 @@ func BuildFromConfig(cfg *config.Config) Notifier {
 			if ch.URL != "" {
 				notifiers = append(notifiers, NewBarkNotifier(ch.URL, nil))
 			}
+		case "gotify":
+			if ch.URL != "" {
+				token := ch.Token
+				if token == "" {
+					token = ch.Secret
+				}
+				notifiers = append(notifiers, NewGotifyNotifier(ch.URL, token, ch.Priority, nil))
+			}
 		case "webhook", "http", "slack":
 			if ch.URL != "" {
 				notifiers = append(notifiers, NewWebhookNotifier(ch.URL, nil))

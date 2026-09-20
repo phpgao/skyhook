@@ -191,9 +191,18 @@ notify:
       enabled: true
       url: "https://api.day.app/YOUR_BARK_KEY"
 
+    # Gotify 实时自建推送通知
+    - name: "个人自建-Gotify"
+      type: "gotify"
+      enabled: true
+      url: "https://gotify.example.com" # 服务端地址（系统会自动追加 /message）
+      token: "Axxxxxxxxxxxxxx"          # 在 Gotify 创建的 Application Token
+      priority: 5                       # 基础优先级 1-10（错误告警自动提升至 8）
+
     # 通用 HTTP Webhook (接收 SkyHook 标准 JSON Payload)
     - name: "自动化中间件-Webhook"
       type: "webhook"
       enabled: false
       url: "https://api.example.com/skyhook/callback"
+
 

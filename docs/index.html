@@ -545,6 +545,22 @@
             </p>
           </div>
 
+          <!-- Gotify -->
+          <div class="glass-card rounded-xl p-6 hover:border-emerald-500/50 transition">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="radio" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-white">Gotify (自建推送)</h4>
+                <span class="text-xs text-slate-400 font-mono">type: "gotify"</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              开源私有化推送服务，支持 Android/Web 客户端直连，原生 Markdown 富文本渲染与故障自动升权。
+            </p>
+          </div>
+
           <!-- Webhook -->
           <div class="glass-card rounded-xl p-6 hover:border-amber-500/50 transition">
             <div class="flex items-center space-x-3 mb-3">
@@ -628,7 +644,15 @@
     - <span class="text-slate-300">name:</span> <span class="text-emerald-300">"个人 iPhone"</span>
       <span class="text-slate-300">type:</span> <span class="text-emerald-400">"bark"</span>
       <span class="text-slate-300">enabled:</span> <span class="text-emerald-400">true</span>
-      <span class="text-slate-300">url:</span> <span class="text-amber-300">"https://api.day.app/YOUR_BARK_KEY"</span></pre>
+      <span class="text-slate-300">url:</span> <span class="text-amber-300">"https://api.day.app/YOUR_BARK_KEY"</span>
+
+    <span class="text-slate-500"># 5. Gotify (私有化推送服务)</span>
+    - <span class="text-slate-300">name:</span> <span class="text-emerald-300">"个人 Gotify"</span>
+      <span class="text-slate-300">type:</span> <span class="text-emerald-400">"gotify"</span>
+      <span class="text-slate-300">enabled:</span> <span class="text-emerald-400">true</span>
+      <span class="text-slate-300">url:</span> <span class="text-amber-300">"https://gotify.example.com"</span>
+      <span class="text-slate-300">token:</span> <span class="text-amber-300">"Axxxxxxxxxxxxxx"</span>
+      <span class="text-slate-300">priority:</span> <span class="text-emerald-400">5</span></pre>
           </div>
         </div>
       </section>
