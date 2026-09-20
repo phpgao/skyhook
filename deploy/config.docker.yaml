@@ -76,7 +76,7 @@ limits:
   default_upload_limit: "1M"
   download_timeout: 2h
 
-default_action: "default_pipeline"
+default_action: "quark_backup"
 
 actions:
   default_pipeline:
@@ -94,7 +94,7 @@ actions:
             run: "echo \"[START] {url} by {downloader}\""
 
       on_progress:
-        notify: true
+        notify: false
 
       on_complete:
         notify: true
@@ -114,15 +114,21 @@ actions:
     clean_at_end: true # 上传成功后清理本地磁盘
 
     hooks:
+      on_create_failed:
+        notify: true
+
       on_start:
         notify: true
+
+      on_progress:
+        notify: false
 
       on_complete:
         notify: true
         commands:
-          # 使用内置 diskcli 工具直接上传至夸克网盘目录 /remote/downloads/
+          # 使用内置 diskcli 工具直接上传至夸克网盘目录 /夸克上传文件/skyhook/
           - name: "转存至夸克网盘"
-            run: "diskcli upload \"{path}\" /remote/downloads/"
+            run: "diskcli upload \"{path}\" /夸克上传文件/skyhook/"
             timeout: 1h
             retries: 3
             retry_interval: 10s
