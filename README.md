@@ -1,7 +1,20 @@
-# SkyHook (天钩) 🛸
+<p align="center">
+  <img src="docs/images/logo.png" width="128" height="128" alt="SkyHook Logo" />
+</p>
 
-> **高速远程中继下载与 Hook 驱动的自动化转存流水线引擎**  
-> *"本地一键投送，云端高速吸纳，流水线自动归档，多渠道即时知晓。"*
+<h1 align="center">SkyHook (天钩)</h1>
+
+<p align="center">
+  <strong>🛸 高速远程中继下载与 Hook 自动化转存流水线引擎</strong><br />
+  <em>"本地一键投送，云端高速吸纳，流水线自动归档，多渠道即时知晓。"</em>
+</p>
+
+<p align="center">
+  <a href="https://phpgao.github.io/skyhook/"><img src="https://img.shields.io/badge/Documentation-GitHub%20Pages-00ADD8?style=flat-square&logo=github" alt="Docs"></a>
+  <a href="https://github.com/phpgao/skyhook/actions/workflows/docker.yml"><img src="https://img.shields.io/github/actions/workflow/status/phpgao/skyhook/docker.yml?branch=main&label=CI%20Build&logo=github&style=flat-square" alt="CI Status"></a>
+  <a href="https://github.com/phpgao/skyhook/pkgs/container/skyhook"><img src="https://img.shields.io/badge/GHCR-Docker%20Image-blue?logo=docker&style=flat-square" alt="GHCR"></a>
+  <a href="https://github.com/phpgao/skyhook/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-purple?style=flat-square" alt="License"></a>
+</p>
 
 ---
 
