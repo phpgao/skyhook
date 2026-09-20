@@ -89,3 +89,82 @@ func (c *Client) Health(ctx context.Context) error {
 	}
 	return nil
 }
+
+// ListTasksResponse represents the response envelope of GET /api/tasks
+type ListTasksResponse struct {
+	Total int                `json:"total"`
+	Tasks []model.TaskRecord `json:"tasks"`
+}
+
+// ListTasks queries all tracked tasks from the SkyHook server
+func (c *Client) ListTasks(ctx context.Context) ([]model.TaskRecord, error) {
+	reqURL := c.baseURL + "/api/tasks"
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	if c.token != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, fmt.Errorf("authentication failed: 401 Unauthorized (check your token)")
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("server returned error HTTP %d", resp.StatusCode)
+	}
+
+	var listResp ListTasksResponse
+	if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
+		return nil, fmt.Errorf("failed to decode list tasks response: %w", err)
+	}
+
+	return listResp.Tasks, nil
+}
+
+// GetTask queries a specific task by GID
+func (c *Client) GetTask(ctx context.Context, gid string) (*model.TaskRecord, error) {
+	reqURL := fmt.Sprintf("%s/api/tasks/%s", c.baseURL, gid)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	if c.token != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("task %q not found", gid)
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, fmt.Errorf("authentication failed: 401 Unauthorized (check your token)")
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("server returned error HTTP %d", resp.StatusCode)
+	}
+
+	var record model.TaskRecord
+	if err := json.NewDecoder(resp.Body).Decode(&record); err != nil {
+		return nil, fmt.Errorf("failed to decode task response: %w", err)
+	}
+
+	return &record, nil
+}
+

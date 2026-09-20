@@ -154,12 +154,14 @@ func (w *Watcher) Track(gid string, targetURL string, action model.Action, notif
 func (w *Watcher) GetTask(gid string) (*TaskRecord, bool) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
-	t, ok := w.tasks[gid]
-	if !ok {
-		return nil, false
+	if t, ok := w.tasks[gid]; ok {
+		cpy := *t
+		return &cpy, true
 	}
-	cpy := *t
-	return &cpy, true
+	if w.taskStore != nil {
+		return w.taskStore.Get(gid)
+	}
+	return nil, false
 }
 
 // ListTasks returns all tasks from store or memory

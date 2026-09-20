@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/phpgao/skyhook/internal/model"
@@ -44,10 +45,16 @@ func main() {
 	defaultServer = getEnvOrDefault("SKYHOOK_SERVER", defaultServer)
 	defaultToken = getEnvOrDefault("SKYHOOK_TOKEN", defaultToken)
 
-	// Check if first arg is "login" command
-	if len(os.Args) > 1 && os.Args[1] == "login" {
-		handleLogin(os.Args[2:], defaultServer, defaultToken)
-		return
+	// Subcommand routing
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "login":
+			handleLogin(os.Args[2:], defaultServer, defaultToken)
+			return
+		case "status", "list", "ps":
+			handleStatus(os.Args[1], os.Args[2:], defaultServer, defaultToken)
+			return
+		}
 	}
 
 	fs := flag.NewFlagSet("skyhook", flag.ExitOnError)
@@ -65,9 +72,15 @@ func main() {
 
 Usage:
   skyhook [options] <url|magnet|torrent_file>...
+  skyhook status [options] [task_gid]
+  skyhook list [options]
   skyhook login -s <server> -t <token> [--local]
 
 Commands:
+  status [gid]
+        Query download status of all tasks, or details for a specific task GID
+  list / ps
+        List all tracked download tasks
   login
         Save server address and token into .skyhook file
 
@@ -243,4 +256,133 @@ func maskToken(tok string) string {
 		return "******"
 	}
 	return tok[:3] + "..." + tok[len(tok)-3:]
+}
+
+func handleStatus(cmdName string, args []string, defaultServer, defaultToken string) {
+	statusFs := flag.NewFlagSet(cmdName, flag.ExitOnError)
+	configFile := statusFs.String("c", "", "Path to custom .skyhook credentials file")
+	serverURL := statusFs.String("s", "", "SkyHook server URL (overrides .skyhook / env)")
+	token := statusFs.String("t", "", "Authentication token (overrides .skyhook / env)")
+
+	statusFs.Usage = func() {
+		fmt.Printf(`Usage: skyhook %s [options] [task_gid]
+
+Query download task status or list all tasks.
+
+Options:
+  -c string   Path to custom .skyhook credentials file
+  -s string   SkyHook server URL
+  -t string   Authentication token
+
+Examples:
+  skyhook status                 # List all tasks
+  skyhook list                   # Alias for listing all tasks
+  skyhook status <task_gid>      # Query details for a specific task
+`, cmdName)
+	}
+
+	if err := statusFs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+
+	finalServer := defaultServer
+	finalToken := defaultToken
+
+	if *configFile != "" {
+		customCreds, err := client.LoadCredentialsFromPath(*configFile)
+		if err != nil {
+			fmt.Printf("❌ Failed to load credentials from %s: %v\n", *configFile, err)
+			os.Exit(1)
+		}
+		if customCreds.Server != "" {
+			finalServer = customCreds.Server
+		}
+		if customCreds.Token != "" {
+			finalToken = customCreds.Token
+		}
+	}
+
+	if *serverURL != "" {
+		finalServer = *serverURL
+	}
+	if *token != "" {
+		finalToken = *token
+	}
+
+	cli := client.NewClient(finalServer, finalToken)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	remaining := statusFs.Args()
+	if len(remaining) > 0 {
+		// Query specific task
+		gid := remaining[0]
+		task, err := cli.GetTask(ctx, gid)
+		if err != nil {
+			fmt.Printf("❌ Failed to query task %q: %v\n", gid, err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("📋 Task Details [%s]:\n", task.GID)
+		fmt.Printf("  Status:     %s\n", formatStatus(task.Status))
+		if task.Action.Name != "" {
+			fmt.Printf("  Action:     %s (clean_at_end: %v)\n", task.Action.Name, task.Action.CleanAtEnd)
+		}
+		fmt.Printf("  Created At: %s\n", task.CreatedAt.Local().Format("2006-01-02 15:04:05"))
+		if !task.UpdatedAt.IsZero() {
+			fmt.Printf("  Updated At: %s\n", task.UpdatedAt.Local().Format("2006-01-02 15:04:05"))
+		}
+		fmt.Printf("  Target URL: %s\n", task.URL)
+		if task.ErrorMsg != "" {
+			fmt.Printf("  Error Msg:  %s\n", task.ErrorMsg)
+		}
+		return
+	}
+
+	// List all tasks
+	tasks, err := cli.ListTasks(ctx)
+	if err != nil {
+		fmt.Printf("❌ Failed to list tasks: %v\n", err)
+		os.Exit(1)
+	}
+
+	if len(tasks) == 0 {
+		fmt.Println("No download tasks found on server.")
+		return
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintln(w, "TASK GID\tSTATUS\tACTION\tCREATED AT\tTARGET URL")
+	for _, t := range tasks {
+		actionName := t.Action.Name
+		if actionName == "" {
+			actionName = "-"
+		}
+		displayURL := t.URL
+		if len(displayURL) > 60 {
+			displayURL = displayURL[:57] + "..."
+		}
+		createdAt := t.CreatedAt.Local().Format("2006-01-02 15:04:05")
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", t.GID, formatStatus(t.Status), actionName, createdAt, displayURL)
+	}
+	w.Flush()
+}
+
+func formatStatus(s model.TaskStatus) string {
+	switch s {
+	case model.StatusCompleted:
+		return "🟢 completed"
+	case model.StatusDownloading:
+		return "🔵 downloading"
+	case model.StatusProcessing:
+		return "🟣 processing"
+	case model.StatusFailed:
+		return "🔴 failed"
+	case model.StatusPending:
+		return "⏳ pending"
+	case model.StatusCanceled:
+		return "⚪ canceled"
+	default:
+		return string(s)
+	}
 }
