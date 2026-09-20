@@ -1,0 +1,199 @@
+# ==============================================================================
+# SkyHook (天钩) 完整生产级配置文件
+# ==============================================================================
+
+# 服务端基础配置
+server:
+  port: 8080
+  # API 鉴权 Token（客户端请求头：Authorization: Bearer <token> 或 X-SkyHook-Token）
+  auth_token: "skyhook-super-secret-key"
+
+# ==============================================================================
+# 动态下载引擎驱动池 (可任意配置、指定优先级 0-99、指定自定义 bin 路径)
+# 当目标链接到达时，调度器会根据 target_types 匹配并在所有可用工具中挑出优先级最高的运行
+# ==============================================================================
+downloaders:
+  # 1. Aria2 RPC 守护进程：专精 BT / 磁力链接 (优先级 88)
+  - name: "aria2_rpc"
+    type: "aria2_rpc"
+    enabled: true
+    priority: 88
+    target_types: ["bt", "magnet"]
+    rpc_url: "http://127.0.0.1:6800/jsonrpc"
+    rpc_secret: "aria2-rpc-token"
+
+  # 2. Aria2 CLI 命令行直接 Fork 执行：专精 HTTP/HTTPS (优先级 88)
+  - name: "aria2c_cli"
+    type: "cli"
+    # bin 支持自定义绝对路径 (如 /usr/local/bin/aria2c)，未设置路径时默认从系统 PATH 查找
+    bin: "aria2c"
+    enabled: true
+    priority: 88
+    target_types: ["http"]
+    args: ["-x", "16", "-s", "16", "-d", "{dir}", "{url}"]
+
+  # 3. Wget 命令行工具 (优先级 19)
+  - name: "wget"
+    type: "cli"
+    bin: "wget"
+    enabled: true
+    priority: 19
+    target_types: ["http"]
+    args: ["-c", "-P", "{dir}", "{url}"]
+
+  # 4. Curl 命令行工具 (优先级 10)
+  - name: "curl"
+    type: "cli"
+    bin: "curl"
+    enabled: true
+    priority: 10
+    target_types: ["http"]
+    args: ["-L", "-C", "-", "-o", "{path}", "{url}"]
+
+  # 5. yt-dlp 流媒体视频专用下载器 (优先级 90，专用下载 YouTube、Bilibili 等)
+  - name: "yt_dlp"
+    type: "cli"
+    bin: "yt-dlp" # 或指定绝对路径如 /usr/local/bin/yt-dlp
+    enabled: true
+    priority: 90
+    target_types: ["video"]
+    domains: ["youtube.com", "youtu.be", "bilibili.com", "b23.tv", "twitter.com", "x.com"]
+    args: ["-P", "{dir}", "--no-playlist", "{url}"]
+
+  # 6. Native Go 原生下载器：纯 Go 实现、零外部依赖保底 (优先级 1)
+  - name: "native_go"
+    type: "native"
+    enabled: true
+    priority: 1
+    target_types: ["http"]
+
+# ==============================================================================
+# 全局存储与磁盘空间预留保护
+# ==============================================================================
+storage:
+  # 统一落盘下载目录 (适用于所有下载引擎：Aria2 RPC/Fork, Wget, Curl, yt-dlp, Native)
+  download_dir: "/data/skyhook/downloads"
+  # 磁盘最低安全预留空间 (支持 2GB, 500MB, 10G 等，设为 0 则禁用)
+  # 保护机制：
+  # 1. 提交任务时若剩余空间 < 预留空间，直接拒绝并报错 (HTTP 507 + on_create_failed Hook)
+  # 2. BT 种子元数据解析或下载巡检时，若预计所需空间会导致低于预留空间，立即终止清理 (on_error Hook)
+  min_free_space: "2GB"
+  # 任务状态持久化文件（重启后自动恢复与断点接管任务，默认: <download_dir>/.skyhook_tasks.json）
+  state_file: "/data/skyhook/downloads/.skyhook_tasks.json"
+
+# 全局默认 Aria2 配置参数（供 Aria2 使用）
+aria2:
+  rpc_url: "http://127.0.0.1:6800/jsonrpc"
+  rpc_secret: "aria2-rpc-token"
+  download_dir: "/data/skyhook/downloads"
+  trackers: "udp://tracker.opentrackr.org:1337/announce,udp://open.tracker.cl:1337/announce"
+
+# 限速与下载超时看门狗保护
+limits:
+  default_download_limit: "0"  # 0 为不限速，支持 10M, 500K
+  default_upload_limit: "1M"    # 做种上传限速
+  download_timeout: 2h        # 自然语言时间段：超时则强制取消并清理本地临时文件
+
+# 默认预制动作名称
+default_action: "multi_backup"
+
+# ==============================================================================
+# 动作与完整生命周期 Hook 系统
+# ==============================================================================
+actions:
+  multi_backup:
+    name: "全生命周期灾备归档流水线"
+    clean_at_end: true # 所有 Hook 完成后统一清理本地磁盘，永不爆盘
+
+    hooks:
+      # Hook 1: 任务创建失败时触发
+      on_create_failed:
+        notify: true # 立即向所有配置的通知渠道告警创建失败原因
+
+      # Hook 2: 任务开始下载时触发
+      on_start:
+        notify: true
+        commands:
+          - name: "记录下载启动日志"
+            run: "echo \"[START] {url} started via {downloader}\" >> /var/log/skyhook.log"
+            timeout: 10s
+
+      # Hook 3: 任务巡检进度广播 (周期性报告下载百分比与速度)
+      on_progress:
+        notify: true # 开启后巡检时向通知渠道推送瞬时速度与进度百分比
+
+      # Hook 4: 下载完成后触发 (执行上传夸克、OSS 等自定义命令并通知结果)
+      on_complete:
+        notify: true
+        commands:
+          - name: "上传夸克网盘"
+            run: "quark-cli upload \"{path}\" /remote/downloads/"
+            timeout: 45m
+            retries: 3
+            retry_interval: 10s
+            continue_on_error: true # 即使夸克上传失败，不阻断后续上传 OSS
+
+          - name: "上传阿里云 OSS"
+            run: "ossutil cp -r \"{path}\" oss://my-bucket/downloads/"
+            timeout: 1h
+            retries: 2
+            retry_interval: 5s
+            continue_on_error: true
+
+      # Hook 5: 下载失败或超时取消时触发
+      on_error:
+        notify: true
+        commands:
+          - name: "清理并记录异常"
+            run: "echo \"[ERROR] Task {id} failed: {error}\" >> /var/log/skyhook_error.log"
+
+# ==============================================================================
+# 多渠道通知系统 (支持 Telegram / 企业微信 / 钉钉 / 飞书 / Bark / 自定义 Webhook 并行广播)
+# ==============================================================================
+notify:
+  # 方式 1: 简易配置 (兼容老版本)
+  telegram:
+    bot_token: "123456789:ABCdefGhIJKlmNoPQRstuVWXyz"
+    chat_id: "-1001234567890"
+  webhook_url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY"
+  bark_url: "https://api.day.app/YOUR_BARK_KEY"
+
+  # 方式 2: 多渠道矩阵列表 (可同时启用多个渠道，任意增删并按需开关)
+  channels:
+    # Telegram Bot
+    - name: "运维群-TG"
+      type: "telegram"
+      enabled: true
+      bot_token: "123456789:ABCdefGhIJKlmNoPQRstuVWXyz"
+      chat_id: "-1001234567890"
+
+    # 企业微信群机器人 (Markdown 格式推送)
+    - name: "团队-企业微信"
+      type: "wecom"
+      enabled: true
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+    # 钉钉群自定义机器人 (Markdown 格式推送)
+    - name: "项目组-钉钉"
+      type: "dingtalk"
+      enabled: true
+      url: "https://oapi.dingtalk.com/robot/send?access_token=xxxxxxxx"
+
+    # 飞书群自定义机器人 (富文本 post 格式推送)
+    - name: "研发群-飞书"
+      type: "feishu"
+      enabled: true
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx"
+
+    # Bark iOS 实时推送通知
+    - name: "个人手机-Bark"
+      type: "bark"
+      enabled: true
+      url: "https://api.day.app/YOUR_BARK_KEY"
+
+    # 通用 HTTP Webhook (接收 SkyHook 标准 JSON Payload)
+    - name: "自动化中间件-Webhook"
+      type: "webhook"
+      enabled: false
+      url: "https://api.example.com/skyhook/callback"
+

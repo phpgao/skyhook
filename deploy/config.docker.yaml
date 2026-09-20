@@ -1,0 +1,135 @@
+# ==============================================================================
+# SkyHook 容器化生产运行配置 (Alpine Docker Image, 内置 diskcli 夸克网盘客户端)
+# ==============================================================================
+
+server:
+  port: 8080
+  auth_token: "skyhook-secret-token"
+
+storage:
+  download_dir: "/data/downloads"
+  min_free_space: "1GB"
+  state_file: "/data/config/.skyhook_tasks.json"
+
+aria2:
+  rpc_url: "http://127.0.0.1:6800/jsonrpc"
+  rpc_secret: "skyhook-rpc-token"
+  download_dir: "/data/downloads"
+  trackers: "udp://tracker.opentrackr.org:1337/announce,udp://open.tracker.cl:1337/announce"
+
+downloaders:
+  # 1. Aria2 RPC 守护进程：专精 BT / 磁力链接 (优先级 88)
+  - name: "aria2_rpc"
+    type: "aria2_rpc"
+    enabled: true
+    priority: 88
+    target_types: ["bt", "magnet"]
+    rpc_url: "http://127.0.0.1:6800/jsonrpc"
+    rpc_secret: "skyhook-rpc-token"
+
+  # 2. Aria2 CLI 命令行 Fork 执行：专精 HTTP/HTTPS 多线程 (优先级 88)
+  - name: "aria2c_cli"
+    type: "cli"
+    bin: "aria2c"
+    enabled: true
+    priority: 88
+    target_types: ["http"]
+    args: ["-x", "16", "-s", "16", "-d", "{dir}", "{url}"]
+
+  # 3. Wget 命令行工具 (优先级 19)
+  - name: "wget"
+    type: "cli"
+    bin: "wget"
+    enabled: true
+    priority: 19
+    target_types: ["http"]
+    args: ["-c", "-P", "{dir}", "{url}"]
+
+  # 4. Curl 命令行工具 (优先级 10)
+  - name: "curl"
+    type: "cli"
+    bin: "curl"
+    enabled: true
+    priority: 10
+    target_types: ["http"]
+    args: ["-L", "-C", "-", "-o", "{path}", "{url}"]
+
+  # 5. yt-dlp 流媒体视频专用下载器 (优先级 90)
+  - name: "yt_dlp"
+    type: "cli"
+    bin: "yt-dlp"
+    enabled: true
+    priority: 90
+    target_types: ["video"]
+    domains: ["youtube.com", "youtu.be", "bilibili.com", "b23.tv", "twitter.com", "x.com"]
+    args: ["-P", "{dir}", "--no-playlist", "{url}"]
+
+  # 6. Native Go 原生下载器保底 (优先级 1)
+  - name: "native_go"
+    type: "native"
+    enabled: true
+    priority: 1
+    target_types: ["http"]
+
+limits:
+  default_download_limit: "0"
+  default_upload_limit: "1M"
+  download_timeout: 2h
+
+default_action: "default_pipeline"
+
+actions:
+  default_pipeline:
+    name: "标准中继流水线"
+    clean_at_end: false
+
+    hooks:
+      on_create_failed:
+        notify: true
+
+      on_start:
+        notify: true
+        commands:
+          - name: "记录启动信息"
+            run: "echo \"[START] {url} by {downloader}\""
+
+      on_progress:
+        notify: true
+
+      on_complete:
+        notify: true
+        commands:
+          - name: "检查下载成果"
+            run: "ls -lh \"{path}\""
+
+      on_error:
+        notify: true
+        commands:
+          - name: "记录错误"
+            run: "echo \"[ERROR] Task {id} failed: {error}\""
+
+  # 夸克网盘自动转存流水线 (使用内置 diskcli)
+  quark_backup:
+    name: "夸克网盘自动转存流水线"
+    clean_at_end: true # 上传成功后清理本地磁盘
+
+    hooks:
+      on_start:
+        notify: true
+
+      on_complete:
+        notify: true
+        commands:
+          # 使用内置 diskcli 工具直接上传至夸克网盘目录 /remote/downloads/
+          - name: "转存至夸克网盘"
+            run: "diskcli upload \"{path}\" /remote/downloads/"
+            timeout: 1h
+            retries: 3
+            retry_interval: 10s
+            continue_on_error: false
+
+      on_error:
+        notify: true
+
+notify:
+  channels: []

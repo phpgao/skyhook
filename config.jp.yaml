@@ -1,0 +1,88 @@
+# SkyHook (天钩) jp 实机测试完整配置文件
+
+server:
+  port: 8088
+  auth_token: "skyhook-jp-test-token"
+
+storage:
+  download_dir: "/opt/skyhook/downloads"
+  min_free_space: "1GB"
+  state_file: "/opt/skyhook/downloads/.skyhook_tasks.json"
+
+aria2:
+  rpc_url: "http://127.0.0.1:6800/jsonrpc"
+  rpc_secret: "skyhook-rpc-secret"
+  download_dir: "/opt/skyhook/downloads"
+
+downloaders:
+  # 1. Aria2 RPC 守护进程：专精 BT / 磁力链接
+  - name: "aria2_rpc"
+    type: "aria2_rpc"
+    enabled: true
+    priority: 88
+    target_types: ["bt", "magnet"]
+    rpc_url: "http://127.0.0.1:6800/jsonrpc"
+    rpc_secret: "skyhook-rpc-secret"
+
+  # 2. Aria2 CLI 命令行 Fork 执行：HTTP/HTTPS 高速多线程
+  - name: "aria2c_cli"
+    type: "cli"
+    bin: "aria2c"
+    enabled: true
+    priority: 88
+    target_types: ["http"]
+    args: ["-x", "16", "-s", "16", "-d", "{dir}", "{url}"]
+
+  # 3. Wget
+  - name: "wget"
+    type: "cli"
+    bin: "wget"
+    enabled: true
+    priority: 19
+    target_types: ["http"]
+    args: ["-c", "-P", "{dir}", "{url}"]
+
+  # 4. Curl
+  - name: "curl"
+    type: "cli"
+    bin: "curl"
+    enabled: true
+    priority: 10
+    target_types: ["http"]
+    args: ["-L", "-C", "-", "-o", "{path}", "{url}"]
+
+  # 5. Native Go 原生保底
+  - name: "native_go"
+    type: "native"
+    enabled: true
+    priority: 1
+    target_types: ["http"]
+
+default_action: "test_pipeline"
+
+actions:
+  test_pipeline:
+    name: "实机测试动作流水线"
+    clean_at_end: false # 保留下载文件以供验证检查
+
+    hooks:
+      on_start:
+        notify: true
+        commands:
+          - name: "记录启动日志"
+            run: "echo \"[TEST-START] {url} by {downloader} at $(date)\" >> /opt/skyhook/test.log"
+
+      on_progress:
+        notify: true
+
+      on_complete:
+        notify: true
+        commands:
+          - name: "校验文件详情"
+            run: "ls -lh \"{path}\" >> /opt/skyhook/test.log && file \"{path}\" >> /opt/skyhook/test.log"
+
+      on_error:
+        notify: true
+        commands:
+          - name: "记录错误"
+            run: "echo \"[TEST-ERROR] {error}\" >> /opt/skyhook/test.log"

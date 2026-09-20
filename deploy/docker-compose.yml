@@ -1,0 +1,21 @@
+services:
+  skyhook:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: skyhook:latest
+    container_name: skyhook
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "6800:6800"
+    environment:
+      - AUTH_TOKEN=skyhook-secret-token
+      - ENABLE_ARIA2_RPC=true
+      - ARIA2_SECRET=skyhook-rpc-token
+      # 可选：直接配置夸克 Cookie，启动时自动初始化 diskcli 配置
+      - QUARK_COOKIE=
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./downloads:/data/downloads
+      - ./config:/data/config

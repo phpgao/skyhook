@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkyHook (天钩) - 高速远程中继下载与 Hook 自动化转存流水线</title>
+  <meta name="description" content="SkyHook (天钩) 是一个专为轻量级 VPS 与中继服务器设计的高速远程下载中继、多渠道通知和生命周期 Hook 流水线引擎。开箱集成 Aria2、yt-dlp、curl、wget 及夸克网盘 diskcli。" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%22><text y=%22.9em%22 font-size=%2290%22>🛸</text></svg>" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#10b981',
+              600: '#059669',
+            },
+            accent: {
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    code, pre {
+      font-family: 'Fira Code', monospace;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glow {
+      box-shadow: 0 0 50px -10px rgba(56, 189, 248, 0.15);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-sky-500 selection:text-white">
+
+  <!-- Background Orbs -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-sky-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="relative z-10 flex flex-col min-h-screen">
+
+    <!-- Navbar -->
+    <header class="border-b border-slate-800/80 sticky top-0 bg-slate-950/80 backdrop-blur-md z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <span class="text-2xl">🛸</span>
+          <a href="#" class="font-extrabold text-xl tracking-tight text-white flex items-center gap-2">
+            SkyHook <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 font-mono">天钩</span>
+          </a>
+        </div>
+        <nav class="hidden md:flex items-center space-x-8 text-sm text-slate-300">
+          <a href="#features" class="hover:text-sky-400 transition-colors">核心特性</a>
+          <a href="#architecture" class="hover:text-sky-400 transition-colors">架构设计</a>
+          <a href="#quickstart" class="hover:text-sky-400 transition-colors">快速开始</a>
+          <a href="#diskcli" class="hover:text-sky-400 transition-colors flex items-center gap-1.5 text-amber-300">
+            <i data-lucide="cloud-upload" class="w-4 h-4"></i> 夸克转存
+          </a>
+          <a href="#api" class="hover:text-sky-400 transition-colors">REST API</a>
+        </nav>
+        <div class="flex items-center space-x-3">
+          <a href="https://github.com/phpgao/skyhook" target="_blank" rel="noopener noreferrer" 
+             class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-1.5 rounded-lg border border-slate-700 transition text-sm">
+            <i data-lucide="github" class="w-4 h-4"></i>
+            <span>GitHub</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="flex-grow">
+      <section class="py-20 md:py-28 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-center">
+        <!-- Badges -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mb-6">
+          <a href="https://github.com/phpgao/skyhook/actions" target="_blank" class="inline-block">
+            <img src="https://img.shields.io/github/actions/workflow/status/phpgao/skyhook/docker.yml?branch=main&label=CI%20Build&logo=github&style=flat-square" alt="CI Status">
+          </a>
+          <a href="https://github.com/phpgao/skyhook/pkgs/container/skyhook" target="_blank" class="inline-block">
+            <img src="https://img.shields.io/badge/GHCR-Docker%20Image-blue?logo=docker&style=flat-square" alt="GHCR">
+          </a>
+          <span class="inline-block">
+            <img src="https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white&style=flat-square" alt="Go Version">
+          </span>
+          <span class="inline-block">
+            <img src="https://img.shields.io/badge/Architecture-amd64%20|%20arm64-success?style=flat-square" alt="Arch">
+          </span>
+          <a href="https://github.com/phpgao/diskcli" target="_blank" class="inline-block">
+            <img src="https://img.shields.io/badge/Built--in-diskcli%20(Quark)-ff6b35?style=flat-square" alt="Quark Diskcli">
+          </a>
+        </div>
+
+        <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white mb-6 leading-tight">
+          高速远程中继下载与 <br />
+          <span class="gradient-text">Hook 驱动的自动化转存流水线</span>
+        </h1>
+
+        <p class="text-lg sm:text-xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed">
+          本地一键投送，云端高速吸纳，流水线自动归档，多渠道即时知晓。<br />
+          为 VPS 下载中继打造：内置 <strong>Aria2 RPC/CLI、yt-dlp、Wget、Curl</strong> 及 <strong>夸克网盘转存 (diskcli)</strong>，零外部数据库依赖，断电重启无缝自愈。
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
+          <a href="#quickstart" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 font-semibold text-white shadow-lg shadow-sky-500/20 transition flex items-center justify-center gap-2">
+            <i data-lucide="terminal" class="w-5 h-5"></i>
+            <span>一键部署运行</span>
+          </a>
+          <a href="https://github.com/phpgao/skyhook" target="_blank" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold transition flex items-center justify-center gap-2">
+            <i data-lucide="star" class="w-5 h-5 text-amber-400"></i>
+            <span>在 GitHub 上 Star</span>
+          </a>
+        </div>
+
+        <!-- Terminal Showcase -->
+        <div class="glass-card rounded-2xl p-4 sm:p-6 text-left glow max-w-4xl mx-auto border border-slate-800/80 shadow-2xl">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800 text-xs text-slate-400">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+              <span class="ml-2 font-mono text-slate-400">terminal — client & remote</span>
+            </div>
+            <span class="text-slate-500 font-mono">skyhook v1.0.0</span>
+          </div>
+          <div class="font-mono text-sm space-y-2 text-slate-300 overflow-x-auto">
+            <p><span class="text-slate-500"># 1. 登录中继 VPS 保存凭证（一次性保存，后续免传服务器与密钥）</span></p>
+            <p><span class="text-sky-400">$</span> skyhook login -s "http://YOUR_VPS_IP:8080" -t "your-secret-token"</p>
+            <p class="text-emerald-400">✅ 凭证已安全保存至 ~/.skyhook (0600权限)</p>
+            <p class="pt-2"><span class="text-slate-500"># 2. 本地一键投送 HTTP 链接 / 磁力链接 / 种子文件 / 流媒体视频</span></p>
+            <p><span class="text-sky-400">$</span> skyhook https://releases.ubuntu.com/24.04/ubuntu-24.04.iso</p>
+            <p><span class="text-sky-400">$</span> skyhook "magnet:?xt=urn:btih:..."</p>
+            <p><span class="text-sky-400">$</span> skyhook -a quark_backup "https://www.youtube.com/watch?v=..."</p>
+            <p class="text-indigo-400">🚀 已提交至云端中继: 智能调度引擎 -> 下载完成 -> 触发 Hook 自动转存夸克 -> Telegram 多端推送完成通知</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Features Grid -->
+      <section id="features" class="py-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl font-bold text-white mb-4">全面完备的核心特性矩阵</h2>
+          <p class="text-slate-400 max-w-2xl mx-auto">拒绝繁琐与脆弱，专为低资源占用、高并发中继与无人值守流水线而生。</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          <!-- Card 1 -->
+          <div class="glass-card rounded-xl p-6 hover:border-sky-500/40 transition">
+            <div class="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center mb-4">
+              <i data-lucide="layers" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">多协议下载引擎池</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+              配置文件驱动驱动池与优先级（0-99）：内置 <strong>Aria2 RPC</strong>（BT/磁链）、<strong>Aria2 CLI Fork</strong>（多线程HTTP）、<strong>yt-dlp</strong>（流媒体视频）、<strong>Wget</strong>、<strong>Curl</strong> 与纯 Go <strong>Native</strong> 保底引擎。
+            </p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="glass-card rounded-xl p-6 hover:border-indigo-500/40 transition">
+            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
+              <i data-lucide="cloud-upload" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">内置夸克网盘 CLI (diskcli)</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+              官方镜像集成作者开源的 <a href="https://github.com/phpgao/diskcli" target="_blank" class="text-sky-400 hover:underline">diskcli</a>，支持在下载完成后无缝触发命令行将文件自动极速上传至夸克网盘，转存成功后统一清理本地空间。
+            </p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="glass-card rounded-xl p-6 hover:border-emerald-500/40 transition">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-4">
+              <i data-lucide="git-fork" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">全生命周期 Hook 系统</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+              首等公民级 Hook：<code>on_create_failed</code>（创建失败告警）、<code>on_start</code>（启动提醒）、<code>on_progress</code>（巡检进度广播）、<code>on_complete</code>（完成转存）、<code>on_error</code>（异常清理）。
+            </p>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="glass-card rounded-xl p-6 hover:border-amber-500/40 transition">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4">
+              <i data-lucide="bell" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">多渠道广播通知矩阵</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+              支持 <strong>Telegram Bot</strong>、<strong>企业微信</strong>、<strong>钉钉</strong>、<strong>飞书</strong>、<strong>Bark (iOS)</strong> 与通用 Webhook 并行并发推送，自动适配各平台专属 Markdown 与卡片排版。
+            </p>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="glass-card rounded-xl p-6 hover:border-purple-500/40 transition">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-4">
+              <i data-lucide="refresh-cw" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">进程崩溃自愈与断点接管</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+              免外挂 DB（采用原子临时文件落盘），进程重启或断电恢复时自动执行 <code>RecoverAndResume</code>：离线完成的任务自动执行流水线，中断的任务自动断点续传（HTTP Range 206 / Aria2 continue）。
+            </p>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="glass-card rounded-xl p-6 hover:border-rose-500/40 transition">
+            <div class="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center mb-4">
+              <i data-lucide="shield-alert" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">磁盘安全预留与防爆盘熔断</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+              通过 OS 原生 <code>Statfs</code> 实时监控 Bavail 剩余块。任务提交时预检拦截（返回 HTTP 507），下载巡检时若可用空间低于预留安全线立即安全熔断中止，杜绝爆盘死机。
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Architecture Section -->
+      <section id="architecture" class="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-white mb-4">优雅的面向接口分层架构</h2>
+          <p class="text-slate-400">高内聚、低耦合，各个模块支持插拔与 Mock 单元测试。</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 md:p-8 font-mono text-sm text-slate-300 overflow-x-auto leading-relaxed border border-slate-800">
+<pre class="text-xs sm:text-sm text-sky-300">
+┌────────────────────────────────────────────────────────────────────────┐
+│                        HTTP RESTful API (:8080)                        │
+│               [Token Auth Middleware]  [Global App Context]            │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+    ┌───────────────────────────────┼────────────────────────────────┐
+    ▼                               ▼                                ▼
+┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
+│ Downloader Interface │   │ Pipeline & Watcher   │   │  Notifier Interface  │
+│  (Priority Registry) │   │ (Recovery & Timeout) │   │ (Concurrent Dispatch)│
+└──────────┬───────────┘   └──────────┬───────────┘   └──────────┬───────────┘
+           │                          │                          │
+     ┌─────┴──────┐             ┌─────┴──────┐             ┌─────┴──────┐
+     │ Aria2 RPC  │             │ Atomic     │             │ Telegram   │
+     │ Aria2 CLI  │             │ TaskStore  │             │ 企业微信   │
+     │ Wget       │             │ (.json)    │             │ 钉钉 / 飞书 │
+     │ Curl       │             └────────────┘             │ Bark       │
+     │ yt-dlp     │                   │                    │ Webhook    │
+     │ Native Go  │             ┌─────┴──────┐             └────────────┘
+     └────────────┘             │ diskcli    │
+                                │ (夸克网盘)  │
+                                └────────────┘
+</pre>
+        </div>
+      </section>
+
+      <!-- Quick Start Section -->
+      <section id="quickstart" class="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-white mb-4">三分钟极速部署</h2>
+          <p class="text-slate-400">选择您喜爱的方式一键启动 SkyHook。</p>
+        </div>
+
+        <div class="space-y-6">
+
+          <!-- Deploy Option 1: Docker Compose -->
+          <div class="glass-card rounded-2xl p-6 border border-slate-800">
+            <div class="flex items-center space-x-3 mb-4">
+              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-400 border border-sky-500/30">推荐</span>
+              <h3 class="text-lg font-bold text-white">方式 1：Docker 一键拉取运行 (预编译多架构镜像)</h3>
+            </div>
+            <p class="text-sm text-slate-400 mb-4">无需本地安装任何编译器与外部工具，直接拉取 GitHub 官方镜像：</p>
+            <div class="bg-slate-900/90 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto border border-slate-800">
+<pre>docker run -d \
+  --name skyhook \
+  --restart unless-stopped \
+  -p 8080:8080 \
+  -p 6800:6800 \
+  -e AUTH_TOKEN=your-secure-token \
+  -e ENABLE_ARIA2_RPC=true \
+  -e ARIA2_SECRET=your-aria2-token \
+  -e QUARK_COOKIE="your_optional_quark_cookie" \
+  -v $(pwd)/downloads:/data/downloads \
+  -v $(pwd)/config:/data/config \
+  ghcr.io/phpgao/skyhook:latest</pre>
+            </div>
+          </div>
+
+          <!-- Deploy Option 2: Docker Compose -->
+          <div class="glass-card rounded-2xl p-6 border border-slate-800">
+            <div class="flex items-center space-x-3 mb-4">
+              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">编排</span>
+              <h3 class="text-lg font-bold text-white">方式 2：使用 Docker Compose 一键启动</h3>
+            </div>
+            <p class="text-sm text-slate-400 mb-4">在克隆仓库后直接执行：</p>
+            <div class="bg-slate-900/90 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto border border-slate-800">
+<pre>git clone https://github.com/phpgao/skyhook.git
+cd skyhook/deploy
+docker compose up -d</pre>
+            </div>
+          </div>
+
+          <!-- Deploy Option 3: Local Binary -->
+          <div class="glass-card rounded-2xl p-6 border border-slate-800">
+            <div class="flex items-center space-x-3 mb-4">
+              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">原生</span>
+              <h3 class="text-lg font-bold text-white">方式 3：单一静态二进制原生运行</h3>
+            </div>
+            <div class="bg-slate-900/90 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto border border-slate-800">
+<pre># 编译服务端与客户端
+go build -o bin/skyhookd ./cmd/skyhookd
+go build -o bin/skyhook ./cmd/skyhook
+
+# 复制配置文件并启动
+cp config.example.yaml config.yaml
+./bin/skyhookd -c config.yaml</pre>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- REST API Section -->
+      <section id="api" class="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-white mb-4">RESTful API 交互规范</h2>
+          <p class="text-slate-400">简单标准，便于外部自动化系统、脚本或机器人集成。</p>
+        </div>
+
+        <div class="glass-card rounded-2xl overflow-hidden border border-slate-800">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-900 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="px-6 py-4 font-semibold">端点</th>
+                <th class="px-6 py-4 font-semibold">方法</th>
+                <th class="px-6 py-4 font-semibold">鉴权</th>
+                <th class="px-6 py-4 font-semibold">描述</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-mono text-xs sm:text-sm">
+              <tr class="hover:bg-slate-900/40">
+                <td class="px-6 py-4 text-sky-400">/health</td>
+                <td class="px-6 py-4"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">GET</span></td>
+                <td class="px-6 py-4 text-slate-500">公开</td>
+                <td class="px-6 py-4 text-slate-300 font-sans">健康检查接口，用于探测探针</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40">
+                <td class="px-6 py-4 text-sky-400">/api/tasks</td>
+                <td class="px-6 py-4"><span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold">POST</span></td>
+                <td class="px-6 py-4 text-amber-400">Bearer Token</td>
+                <td class="px-6 py-4 text-slate-300 font-sans">批量提交下载任务（支持普通 URL、Magnet 磁链、BT 种子）</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40">
+                <td class="px-6 py-4 text-sky-400">/api/tasks</td>
+                <td class="px-6 py-4"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">GET</span></td>
+                <td class="px-6 py-4 text-amber-400">Bearer Token</td>
+                <td class="px-6 py-4 text-slate-300 font-sans">获取所有历史及正在运行的任务状态清单与进度</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40">
+                <td class="px-6 py-4 text-sky-400">/api/tasks/:gid</td>
+                <td class="px-6 py-4"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">GET</span></td>
+                <td class="px-6 py-4 text-amber-400">Bearer Token</td>
+                <td class="px-6 py-4 text-slate-300 font-sans">精确查询指定任务 GID 的瞬时速度、百分比及落盘路径</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 py-8 bg-slate-950 text-center text-xs text-slate-500">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p>© 2026 SkyHook (天钩) Project. Released under AGPL-3.0 License.</p>
+        <div class="flex items-center space-x-6">
+          <a href="https://github.com/phpgao/skyhook" target="_blank" class="hover:text-slate-300">GitHub Repository</a>
+          <a href="https://github.com/phpgao/diskcli" target="_blank" class="hover:text-slate-300">diskcli (Quark)</a>
+          <a href="https://github.com/phpgao/skyhook/issues" target="_blank" class="hover:text-slate-300">Issues & Feedback</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

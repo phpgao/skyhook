@@ -1,0 +1,10 @@
+# Binaries
+bin/
+
+# Temporary and state files
+.skyhook_tasks.json
+*.log
+*.tmp
+
+# OS files
+.DS_Store
