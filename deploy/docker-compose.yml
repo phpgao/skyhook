@@ -16,3 +16,4 @@ services:
     volumes:
       - ./downloads:/data/downloads
       - ./config:/data/config
+      - ./config/diskcli:/root/.diskcli

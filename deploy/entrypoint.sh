@@ -32,10 +32,11 @@ fi
 # If QUARK_COOKIE is supplied via environment variable, write to diskcli config
 if [ -n "${QUARK_COOKIE}" ]; then
     echo "[SkyHook Init] Initializing diskcli configuration with provided QUARK_COOKIE..."
+    export QK_COOKIE="${QUARK_COOKIE}"
     mkdir -p /root/.diskcli
     cat << EOF > /root/.diskcli/config
-[provider.quark]
-cookie = "${QUARK_COOKIE}"
+qk_cookie = "${QUARK_COOKIE}"
+upload_threads = 4
 EOF
 fi
 
