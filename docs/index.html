@@ -75,13 +75,19 @@
             SkyHook <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 font-mono">天钩</span>
           </a>
         </div>
-        <nav class="hidden md:flex items-center space-x-8 text-sm text-slate-300">
+        <nav class="hidden md:flex items-center space-x-6 text-sm text-slate-300">
           <a href="#features" class="hover:text-sky-400 transition-colors">核心特性</a>
+          <a href="#pipeline" class="hover:text-emerald-400 transition-colors flex items-center gap-1">
+            <i data-lucide="git-fork" class="w-3.5 h-3.5 text-emerald-400"></i> Hook 流水线
+          </a>
+          <a href="#notify" class="hover:text-amber-400 transition-colors flex items-center gap-1">
+            <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-400"></i> 通知系统
+          </a>
+          <a href="#diskcli" class="hover:text-orange-400 transition-colors flex items-center gap-1 text-orange-300">
+            <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i> 夸克转存
+          </a>
           <a href="#architecture" class="hover:text-sky-400 transition-colors">架构设计</a>
           <a href="#quickstart" class="hover:text-sky-400 transition-colors">快速开始</a>
-          <a href="#diskcli" class="hover:text-sky-400 transition-colors flex items-center gap-1.5 text-amber-300">
-            <i data-lucide="cloud-upload" class="w-4 h-4"></i> 夸克转存
-          </a>
           <a href="#api" class="hover:text-sky-400 transition-colors">REST API</a>
         </nav>
         <div class="flex items-center space-x-3">
@@ -237,6 +243,426 @@
             </p>
           </div>
 
+        </div>
+      </section>
+
+      <!-- Hook & Pipeline Section -->
+      <section id="pipeline" class="py-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-3">
+            <i data-lucide="cpu" class="w-3.5 h-3.5"></i> 自动化流水线
+          </div>
+          <h2 class="text-3xl font-bold text-white mb-4">全生命周期 Hook 与动作流水线</h2>
+          <p class="text-slate-400 max-w-3xl mx-auto">
+            从入库预检、实时巡检、落盘完成到多阶段转存与磁盘擦除，赋予每一个下载任务完整的自主生命周期控制能力。
+          </p>
+        </div>
+
+        <!-- 5 Hooks Diagram / Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-12">
+          <!-- Hook 1 -->
+          <div class="glass-card rounded-xl p-4 border-l-4 border-l-rose-500 hover:border-rose-500/60 transition">
+            <span class="text-xs font-mono font-bold text-rose-400 uppercase tracking-wider block mb-1">01 / 预检拦截</span>
+            <h4 class="font-bold text-white text-sm mb-1.5 font-mono">on_create_failed</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              空间不足 (HTTP 507)、URL/种子解析失败时立即触发，向通知渠道告警。
+            </p>
+          </div>
+
+          <!-- Hook 2 -->
+          <div class="glass-card rounded-xl p-4 border-l-4 border-l-sky-500 hover:border-sky-500/60 transition">
+            <span class="text-xs font-mono font-bold text-sky-400 uppercase tracking-wider block mb-1">02 / 启动握手</span>
+            <h4 class="font-bold text-white text-sm mb-1.5 font-mono">on_start</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              成功调度下载引擎（Aria2/yt-dlp 等）并建立连接时触发，记录启动日志。
+            </p>
+          </div>
+
+          <!-- Hook 3 -->
+          <div class="glass-card rounded-xl p-4 border-l-4 border-l-amber-500 hover:border-amber-500/60 transition">
+            <span class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider block mb-1">03 / 巡检监控</span>
+            <h4 class="font-bold text-white text-sm mb-1.5 font-mono">on_progress</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              巡检看门狗每 2 秒广播即时速度、进度百分比及落盘体积至监控端。
+            </p>
+          </div>
+
+          <!-- Hook 4 -->
+          <div class="glass-card rounded-xl p-4 border-l-4 border-l-emerald-500 hover:border-emerald-500/60 transition">
+            <span class="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider block mb-1">04 / 完成转存</span>
+            <h4 class="font-bold text-white text-sm mb-1.5 font-mono">on_complete</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              文件完整落盘校验后执行串行流水线命令：夸克网盘转存、转码压缩、OSS 备份。
+            </p>
+          </div>
+
+          <!-- Hook 5 -->
+          <div class="glass-card rounded-xl p-4 border-l-4 border-l-purple-500 hover:border-purple-500/60 transition">
+            <span class="text-xs font-mono font-bold text-purple-400 uppercase tracking-wider block mb-1">05 / 熔断异常</span>
+            <h4 class="font-bold text-white text-sm mb-1.5 font-mono">on_error</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              下载错误、超时取消 (Watchdog) 或动态空间防爆盘熔断时触发清理与告警。
+            </p>
+          </div>
+        </div>
+
+        <!-- Features & Variables Dual Column -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <!-- Execution Control Cards -->
+          <div class="glass-card rounded-2xl p-6 border border-slate-800">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <i data-lucide="sliders" class="w-5 h-5 text-emerald-400"></i>
+              企业级容错与空间保护机制
+            </h3>
+            <ul class="space-y-3.5 text-sm text-slate-300">
+              <li class="flex items-start gap-2.5">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <strong class="text-white font-mono">clean_at_end: true</strong>
+                  <p class="text-xs text-slate-400 mt-0.5">流水线全部命令顺利完成后自动清理本地 VPS 下载源文件，实现“零磁盘留存”云中转。</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <strong class="text-white font-mono">continue_on_error: true</strong>
+                  <p class="text-xs text-slate-400 mt-0.5">命令级容错穿透。单个转存渠道（如网盘故障）异常不阻断后续其他云存储备份与通知。</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <strong class="text-white font-mono">retries: 3 & retry_interval: 10s</strong>
+                  <p class="text-xs text-slate-400 mt-0.5">命令执行故障智能自愈，网络抖动时自动按间隔重试，避免瞬时网络异常导致任务流产。</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <strong class="text-white font-mono">timeout: 45m</strong>
+                  <p class="text-xs text-slate-400 mt-0.5">命令看门狗超时保护，防止转存或外部转码脚本死锁僵死，保障系统调度稳定性。</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Dynamic Template Variables -->
+          <div class="glass-card rounded-2xl p-6 border border-slate-800">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <i data-lucide="code-2" class="w-5 h-5 text-sky-400"></i>
+              命令与通知动态模板变量
+            </h3>
+            <p class="text-xs text-slate-400 mb-4">在 Hook 命令 <code class="text-emerald-400">run</code> 与通知模板中可直接引用上下文宏变量：</p>
+            <div class="grid grid-cols-2 gap-2.5 font-mono text-xs">
+              <div class="bg-slate-900/80 rounded-lg p-2.5 border border-slate-800">
+                <span class="text-sky-400 font-bold">{path}</span>
+                <p class="text-slate-400 font-sans text-[11px] mt-0.5">本地落盘完整绝对路径</p>
+              </div>
+              <div class="bg-slate-900/80 rounded-lg p-2.5 border border-slate-800">
+                <span class="text-sky-400 font-bold">{dir}</span>
+                <p class="text-slate-400 font-sans text-[11px] mt-0.5">目标下载存储目录</p>
+              </div>
+              <div class="bg-slate-900/80 rounded-lg p-2.5 border border-slate-800">
+                <span class="text-sky-400 font-bold">{url}</span>
+                <p class="text-slate-400 font-sans text-[11px] mt-0.5">原始下载链接 / 磁力链接</p>
+              </div>
+              <div class="bg-slate-900/80 rounded-lg p-2.5 border border-slate-800">
+                <span class="text-sky-400 font-bold">{id} / {gid}</span>
+                <p class="text-slate-400 font-sans text-[11px] mt-0.5">任务全局唯一调度编号</p>
+              </div>
+              <div class="bg-slate-900/80 rounded-lg p-2.5 border border-slate-800">
+                <span class="text-sky-400 font-bold">{downloader}</span>
+                <p class="text-slate-400 font-sans text-[11px] mt-0.5">调度的引擎 (如 aria2_rpc)</p>
+              </div>
+              <div class="bg-slate-900/80 rounded-lg p-2.5 border border-slate-800">
+                <span class="text-sky-400 font-bold">{error}</span>
+                <p class="text-slate-400 font-sans text-[11px] mt-0.5">错误异常信息详细描述</p>
+              </div>
+              <div class="bg-slate-900/80 rounded-lg p-2.5 border border-slate-800">
+                <span class="text-sky-400 font-bold">{speed}</span>
+                <p class="text-slate-400 font-sans text-[11px] mt-0.5">实时瞬时速率 (MB/s)</p>
+              </div>
+              <div class="bg-slate-900/80 rounded-lg p-2.5 border border-slate-800">
+                <span class="text-sky-400 font-bold">{progress}</span>
+                <p class="text-slate-400 font-sans text-[11px] mt-0.5">当前下载进度百分比</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pipeline YAML Code Block -->
+        <div class="glass-card rounded-2xl p-6 border border-slate-800">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800 text-xs text-slate-400">
+            <div class="flex items-center gap-2">
+              <i data-lucide="file-code" class="w-4 h-4 text-emerald-400"></i>
+              <span class="font-mono text-slate-300 font-semibold">config.yaml — 生产环境流水线配置范例</span>
+            </div>
+            <span class="font-mono text-slate-500">actions: multi_backup & quark_backup</span>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl p-4 font-mono text-xs sm:text-sm text-slate-200 overflow-x-auto border border-slate-800">
+<pre><span class="text-slate-500"># 定义转存流水线动作</span>
+<span class="text-sky-400">actions:</span>
+  <span class="text-indigo-400">quark_pipeline:</span>
+    <span class="text-slate-300">name:</span> <span class="text-emerald-300">"夸克网盘自动转存并清理流水线"</span>
+    <span class="text-slate-300">clean_at_end:</span> <span class="text-amber-400">true</span> <span class="text-slate-500"># 转存成功后自动清理 VPS 本地文件，永不爆盘！</span>
+
+    <span class="text-sky-400">hooks:</span>
+      <span class="text-slate-300">on_start:</span>
+        <span class="text-slate-300">notify:</span> <span class="text-emerald-400">true</span> <span class="text-slate-500"># 启动时向 Telegram/飞书/企业微信发送广播</span>
+
+      <span class="text-slate-300">on_progress:</span>
+        <span class="text-slate-300">notify:</span> <span class="text-emerald-400">true</span> <span class="text-slate-500"># 周期性上报瞬时下载速率与百分比</span>
+
+      <span class="text-slate-300">on_complete:</span>
+        <span class="text-slate-300">notify:</span> <span class="text-emerald-400">true</span>
+        <span class="text-sky-400">commands:</span>
+          <span class="text-slate-500"># 1. 使用容器内置 diskcli 极速上传至夸克网盘</span>
+          - <span class="text-slate-300">name:</span> <span class="text-emerald-300">"上传至夸克网盘"</span>
+            <span class="text-slate-300">run:</span> <span class="text-amber-300">"diskcli upload \"{path}\" /remote/downloads/"</span>
+            <span class="text-slate-300">timeout:</span> <span class="text-emerald-400">1h</span>
+            <span class="text-slate-300">retries:</span> <span class="text-emerald-400">3</span>
+            <span class="text-slate-300">retry_interval:</span> <span class="text-emerald-400">10s</span>
+            <span class="text-slate-300">continue_on_error:</span> <span class="text-amber-400">true</span> <span class="text-slate-500"># 即使夸克异常，不阻断后续流程</span>
+
+          <span class="text-slate-500"># 2. 同步上传至阿里云 OSS 灾备归档</span>
+          - <span class="text-slate-300">name:</span> <span class="text-emerald-300">"同步至阿里云 OSS"</span>
+            <span class="text-slate-300">run:</span> <span class="text-amber-300">"ossutil cp -r \"{path}\" oss://backup-bucket/downloads/"</span>
+            <span class="text-slate-300">timeout:</span> <span class="text-emerald-400">30m</span>
+            <span class="text-slate-300">retries:</span> <span class="text-emerald-400">2</span>
+
+      <span class="text-slate-300">on_error:</span>
+        <span class="text-slate-300">notify:</span> <span class="text-emerald-400">true</span> <span class="text-slate-500"># 失败告警并自动记录异常日志</span>
+        <span class="text-sky-400">commands:</span>
+          - <span class="text-slate-300">name:</span> <span class="text-emerald-300">"错误告警落盘"</span>
+            <span class="text-slate-300">run:</span> <span class="text-amber-300">"echo \"[ERROR] {id} failed: {error}\" >> /data/config/error.log"</span></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Multi-Channel Notification Section -->
+      <section id="notify" class="py-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-3">
+            <i data-lucide="bell" class="w-3.5 h-3.5"></i> 实时感知
+          </div>
+          <h2 class="text-3xl font-bold text-white mb-4">多渠道并发广播通知矩阵</h2>
+          <p class="text-slate-400 max-w-3xl mx-auto">
+            原生支持主流办公与个人通讯平台，零延迟多端广播。全异步并发分发，绝不阻断核心下载进程。
+          </p>
+        </div>
+
+        <!-- Notification Channels Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <!-- Telegram -->
+          <div class="glass-card rounded-xl p-6 hover:border-sky-500/50 transition">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
+                <i data-lucide="send" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-white">Telegram Bot</h4>
+                <span class="text-xs text-slate-400 font-mono">type: "telegram"</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              支持群组 Channel 或个人私聊机器人推送，原生 Markdown 排版，支持任务直链跳转与状态 Emoji。
+            </p>
+          </div>
+
+          <!-- WeChat Work -->
+          <div class="glass-card rounded-xl p-6 hover:border-emerald-500/50 transition">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="message-square" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-white">企业微信 (WeCom)</h4>
+                <span class="text-xs text-slate-400 font-mono">type: "wecom"</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              企业微信群自定义机器人，适配企业微信专属 Markdown 规范与状态颜色标签（如绿色成功、红色告警）。
+            </p>
+          </div>
+
+          <!-- DingTalk -->
+          <div class="glass-card rounded-xl p-6 hover:border-blue-500/50 transition">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                <i data-lucide="message-circle" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-white">钉钉 (DingTalk)</h4>
+                <span class="text-xs text-slate-400 font-mono">type: "dingtalk"</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              支持钉钉群机器人 Markdown 卡片消息，内置安全签名加签（Sign Secret）与关键词安全校验。
+            </p>
+          </div>
+
+          <!-- Feishu -->
+          <div class="glass-card rounded-xl p-6 hover:border-cyan-500/50 transition">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                <i data-lucide="share-2" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-white">飞书 (Feishu)</h4>
+                <span class="text-xs text-slate-400 font-mono">type: "feishu"</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              支持飞书群自定义机器人，采用飞书富文本 Post 结构化消息排版，适配团队协作工作流看板。
+            </p>
+          </div>
+
+          <!-- Bark -->
+          <div class="glass-card rounded-xl p-6 hover:border-indigo-500/50 transition">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                <i data-lucide="smartphone" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-white">Bark (iOS 原生推送)</h4>
+                <span class="text-xs text-slate-400 font-mono">type: "bark"</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              针对 iPhone/iPad 设备的纯原生即时静默/声音推送，支持分组归类（group）、角标以及自定义铃声。
+            </p>
+          </div>
+
+          <!-- Webhook -->
+          <div class="glass-card rounded-xl p-6 hover:border-amber-500/50 transition">
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <i data-lucide="webhook" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-white">通用 HTTP Webhook</h4>
+                <span class="text-xs text-slate-400 font-mono">type: "webhook"</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              向自建系统、Node-RED、Home Assistant 或中间件发送标准 JSON 负载，包含完整任务元数据与时间戳。
+            </p>
+          </div>
+        </div>
+
+        <!-- Notification Card Mockup & YAML -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <!-- Mock Notification Preview -->
+          <div class="lg:col-span-5 glass-card rounded-2xl p-6 border border-slate-800">
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-4 pb-3 border-b border-slate-800">
+              <span class="flex items-center gap-1.5 text-slate-300 font-medium">
+                <i data-lucide="smartphone" class="w-4 h-4 text-sky-400"></i> 推送效果即时预览
+              </span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono text-[10px]">SUCCESS</span>
+            </div>
+            <!-- Notification Card Body -->
+            <div class="bg-slate-900/90 rounded-xl p-4 border border-slate-800 text-xs space-y-2.5 font-mono shadow-inner">
+              <div class="flex items-center justify-between text-white font-bold pb-2 border-b border-slate-800/80">
+                <span class="flex items-center gap-1.5">
+                  <span class="text-base">🛸</span> SkyHook 任务下载完成通知
+                </span>
+                <span class="text-slate-500 text-[11px] font-normal">刚刚</span>
+              </div>
+              <div class="text-slate-300 space-y-1 text-[11px]">
+                <p><strong class="text-slate-400 font-sans">任务编号：</strong><span class="text-sky-400">fa126bb5882d</span></p>
+                <p><strong class="text-slate-400 font-sans">驱动引擎：</strong><span class="text-emerald-400">aria2_rpc (BT/磁力)</span></p>
+                <p><strong class="text-slate-400 font-sans">目标文件：</strong><span class="text-slate-200 break-all">ubuntu-24.04-desktop-amd64.iso</span></p>
+                <p><strong class="text-slate-400 font-sans">文件大小：</strong><span class="text-amber-300">5.82 GB</span></p>
+                <p><strong class="text-slate-400 font-sans">平均速率：</strong><span class="text-indigo-300">38.4 MB/s</span></p>
+                <p><strong class="text-slate-400 font-sans">执行流水：</strong><span class="text-purple-300">quark_pipeline (已转存至夸克网盘)</span></p>
+              </div>
+              <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-sans">
+                <span>SkyHook Notification Engine</span>
+                <span class="text-emerald-400 font-mono">✓ 本地磁盘已安全释放</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notification Config YAML -->
+          <div class="lg:col-span-7 bg-slate-900/90 rounded-2xl p-4 sm:p-5 font-mono text-xs sm:text-sm text-slate-200 overflow-x-auto border border-slate-800">
+            <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800 text-xs text-slate-400">
+              <span class="font-mono text-slate-300 font-semibold flex items-center gap-1.5">
+                <i data-lucide="settings" class="w-3.5 h-3.5 text-amber-400"></i> config.yaml — notify 渠道列表
+              </span>
+              <span class="font-mono text-slate-500">支持任意渠道增删与组合</span>
+            </div>
+<pre><span class="text-sky-400">notify:</span>
+  <span class="text-indigo-400">channels:</span>
+    <span class="text-slate-500"># 1. Telegram Bot (群组或个人)</span>
+    - <span class="text-slate-300">name:</span> <span class="text-emerald-300">"运维推送群"</span>
+      <span class="text-slate-300">type:</span> <span class="text-emerald-400">"telegram"</span>
+      <span class="text-slate-300">enabled:</span> <span class="text-emerald-400">true</span>
+      <span class="text-slate-300">bot_token:</span> <span class="text-amber-300">"123456789:ABCdefGh..."</span>
+      <span class="text-slate-300">chat_id:</span> <span class="text-amber-300">"-1001234567890"</span>
+
+    <span class="text-slate-500"># 2. 企业微信机器人</span>
+    - <span class="text-slate-300">name:</span> <span class="text-emerald-300">"团队工作群"</span>
+      <span class="text-slate-300">type:</span> <span class="text-emerald-400">"wecom"</span>
+      <span class="text-slate-300">enabled:</span> <span class="text-emerald-400">true</span>
+      <span class="text-slate-300">url:</span> <span class="text-amber-300">"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."</span>
+
+    <span class="text-slate-500"># 3. 钉钉群机器人 (支持签名加签)</span>
+    - <span class="text-slate-300">name:</span> <span class="text-emerald-300">"告警群-钉钉"</span>
+      <span class="text-slate-300">type:</span> <span class="text-emerald-400">"dingtalk"</span>
+      <span class="text-slate-300">enabled:</span> <span class="text-emerald-400">true</span>
+      <span class="text-slate-300">url:</span> <span class="text-amber-300">"https://oapi.dingtalk.com/robot/send?access_token=..."</span>
+
+    <span class="text-slate-500"># 4. Bark (iOS 手机直推)</span>
+    - <span class="text-slate-300">name:</span> <span class="text-emerald-300">"个人 iPhone"</span>
+      <span class="text-slate-300">type:</span> <span class="text-emerald-400">"bark"</span>
+      <span class="text-slate-300">enabled:</span> <span class="text-emerald-400">true</span>
+      <span class="text-slate-300">url:</span> <span class="text-amber-300">"https://api.day.app/YOUR_BARK_KEY"</span></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quark Diskcli Section -->
+      <section id="diskcli" class="py-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/20 mb-3">
+            <i data-lucide="cloud" class="w-3.5 h-3.5"></i> 深度生态整合
+          </div>
+          <h2 class="text-3xl font-bold text-white mb-4">内置夸克网盘转存 (diskcli)</h2>
+          <p class="text-slate-400 max-w-3xl mx-auto">
+            官方 Docker 镜像直接内置作者开源的 <a href="https://github.com/phpgao/diskcli" target="_blank" class="text-orange-400 underline underline-offset-4 hover:text-orange-300">phpgao/diskcli</a> 夸克网盘 CLI，让小硬盘 VPS 变身为永不爆盘的无限云中转站。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          <div class="glass-card rounded-xl p-6 border border-slate-800">
+            <div class="w-10 h-10 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center mb-3">
+              <i data-lucide="key" class="w-5 h-5"></i>
+            </div>
+            <h4 class="font-bold text-white mb-1.5">环境变量自动授权</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              容器启动时只需传入 <code>-e QUARK_COOKIE="..."</code>，启动脚本自动配置 <code>/root/.diskcli/config</code>，无需进入容器手动登录。
+            </p>
+          </div>
+
+          <div class="glass-card rounded-xl p-6 border border-slate-800">
+            <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3">
+              <i data-lucide="zap" class="w-5 h-5"></i>
+            </div>
+            <h4 class="font-bold text-white mb-1.5">极速大文件分块上传</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              通过 <code>diskcli upload "{path}" /remote/downloads/</code> 命令并发秒级上传，断点续传支持，大体积视频与镜像毫无压力。
+            </p>
+          </div>
+
+          <div class="glass-card rounded-xl p-6 border border-slate-800">
+            <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center mb-3">
+              <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </div>
+            <h4 class="font-bold text-white mb-1.5">中转完毕自动擦除</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              搭配流水线的 <code>clean_at_end: true</code>，网盘转存完成立即销毁 VPS 本地临时文件，20GB 磁盘也能中继 100GB 大文件。
+            </p>
+          </div>
         </div>
       </section>
 
