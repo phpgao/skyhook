@@ -1,14 +1,11 @@
 services:
   skyhook:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-    image: skyhook:latest
+    image: ghcr.io/phpgao/skyhook:latest
     container_name: skyhook
     restart: unless-stopped
     ports:
-      - "8080:8080"
-      - "6800:6800"
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:6800:6800"
     environment:
       - AUTH_TOKEN=skyhook-secret-token
       - ENABLE_ARIA2_RPC=true
