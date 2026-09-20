@@ -23,6 +23,12 @@ if [ -n "${AUTH_TOKEN}" ]; then
     sed -i "s/auth_token: .*/auth_token: \"${AUTH_TOKEN}\"/" "${CONFIG_FILE}"
 fi
 
+# Override Aria2 RPC secret in config if provided
+if [ -n "${ARIA2_SECRET}" ]; then
+    echo "[SkyHook Init] Applying ARIA2_SECRET to config from environment variable..."
+    sed -i "s/rpc_secret: .*/rpc_secret: \"${ARIA2_SECRET}\"/" "${CONFIG_FILE}"
+fi
+
 # If QUARK_COOKIE is supplied via environment variable, write to diskcli config
 if [ -n "${QUARK_COOKIE}" ]; then
     echo "[SkyHook Init] Initializing diskcli configuration with provided QUARK_COOKIE..."
